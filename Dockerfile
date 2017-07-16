@@ -2,21 +2,11 @@ FROM openjdk:8-jdk
 
 RUN apt-get update && apt-get install -y git curl && rm -rf /var/lib/apt/lists/*
 
-ARG user=jenkins
-ARG group=jenkins
-ARG uid=1000
-ARG gid=1000
 ARG http_port=8080
 ARG agent_port=50000
 
 ENV JENKINS_HOME /var/jenkins_home
 ENV JENKINS_SLAVE_AGENT_PORT ${agent_port}
-
-# Jenkins is run with user `jenkins`, uid = 1000
-# If you bind mount a volume from the host or a data container, 
-# ensure you use the same uid
-RUN groupadd -g ${gid} ${group} \
-    && useradd -d "$JENKINS_HOME" -u ${uid} -g ${gid} -m -s /bin/bash ${user}
 
 # Jenkins home directory is a volume, so configuration and build history 
 # can be persisted and survive image upgrades
@@ -52,7 +42,6 @@ RUN curl -fsSL ${JENKINS_URL} -o /usr/share/jenkins/jenkins.war \
   && echo "${JENKINS_SHA}  /usr/share/jenkins/jenkins.war" | sha256sum -c -
 
 ENV JENKINS_UC https://updates.jenkins.io
-RUN chown -R ${user} "$JENKINS_HOME" /usr/share/jenkins/ref
 
 # for main web interface:
 EXPOSE ${http_port}
@@ -61,8 +50,6 @@ EXPOSE ${http_port}
 EXPOSE ${agent_port}
 
 ENV COPY_REFERENCE_FILE_LOG $JENKINS_HOME/copy_reference_file.log
-
-USER ${user}
 
 COPY jenkins-support /usr/local/bin/jenkins-support
 COPY jenkins.sh /usr/local/bin/jenkins.sh
